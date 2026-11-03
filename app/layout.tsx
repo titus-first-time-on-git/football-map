@@ -3,10 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Harta Fotbalului Românesc",
-  description: "Arbitri, delegări și informări CCA, organizate pe harta României.",
+  description: "Hartă și căutare unificată pentru arbitri, meciuri și delegări din România.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/favicon.svg?v=2",
+    shortcut: "/favicon.svg?v=2",
   },
 };
 

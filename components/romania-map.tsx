@@ -8,6 +8,8 @@ type MapCity = {
   count: number;
   referees: number;
   assistants: number;
+  kind?: "officials" | "matches";
+  labels?: string[];
 };
 
 type RomaniaMapProps = {
@@ -25,32 +27,53 @@ const SIZE = { width: 760, height: 430, padding: 16 };
 const CITY_COORDS: Record<string, [number, number]> = {
   "Alba Iulia": [23.57, 46.07],
   Arad: [21.31, 46.17],
+  Balotești: [26.12, 44.62],
+  Balş: [24.10, 44.35],
   Bacău: [26.91, 46.57],
   Bistrița: [24.49, 47.13],
   Brașov: [25.60, 45.66],
   Brăila: [27.97, 45.27],
   București: [26.10, 44.43],
+  Buftea: [25.95, 44.56],
   Carei: [22.46, 47.68],
   "Câmpulung Muscel": [25.05, 45.27],
   Cernica: [26.29, 44.42],
   Chitila: [25.98, 44.51],
   "Cluj-Napoca": [23.59, 46.77],
+  Clinceni: [25.92, 44.37],
   Constanța: [28.63, 44.18],
   Craiova: [23.79, 44.33],
+  Dej: [23.88, 47.14],
+  Deva: [22.90, 45.88],
   Făgăraș: [24.97, 45.84],
   Galați: [28.05, 45.44],
   Gherghița: [26.27, 44.80],
   Iași: [27.59, 47.16],
   Lugoj: [21.90, 45.69],
   Mangalia: [28.58, 43.82],
+  Mioveni: [24.95, 44.96],
+  Moreni: [25.64, 44.98],
+  "Odorheiu Secuiesc": [25.30, 46.30],
+  Oradea: [21.93, 47.05],
+  Paşcani: [26.72, 47.25],
+  Pecica: [21.07, 46.17],
   Pitești: [24.87, 44.86],
   Ploiești: [26.02, 44.94],
   "Râmnicu Vâlcea": [24.37, 45.10],
+  Recea: [23.52, 47.63],
+  Samurcași: [25.93, 44.60],
+  Sibiu: [24.15, 45.79],
+  Slobozia: [27.36, 44.56],
   "Satu Mare": [22.89, 47.79],
   "Sfântu Gheorghe": [25.79, 45.86],
   Suceava: [26.25, 47.65],
   Suseni: [24.95, 44.72],
   Ștefănești: [24.95, 44.87],
+  Şag: [21.17, 45.65],
+  Titu: [25.54, 44.65],
+  Târgovişte: [25.46, 44.93],
+  "Târgu Jiu": [23.27, 45.04],
+  "Turnu Măgurele": [24.87, 43.75],
   "Târgu Bujor": [27.92, 45.87],
   "Târgu Mureș": [24.56, 46.54],
   Timișoara: [21.23, 45.75],
@@ -91,7 +114,7 @@ export function RomaniaMap({ cities, activeCity, onCityChange }: RomaniaMapProps
                 <Tooltip.Trigger asChild>
                   <button
                     type="button"
-                    className={`map-marker ${active ? "is-active" : ""}`}
+                    className={`map-marker ${city.kind === "matches" ? "is-match" : ""} ${active ? "is-active" : ""}`}
                     style={{
                       left: `${(x / SIZE.width) * 100}%`,
                       top: `${(y / SIZE.height) * 100}%`,
@@ -101,7 +124,7 @@ export function RomaniaMap({ cities, activeCity, onCityChange }: RomaniaMapProps
                     onMouseEnter={() => onCityChange(city.name)}
                     onFocus={() => onCityChange(city.name)}
                     onClick={() => onCityChange(city.name)}
-                    aria-label={`${city.name}: ${city.count} oficiali`}
+                    aria-label={`${city.name}: ${city.count} ${city.kind === "matches" ? "meciuri" : "oficiali"}`}
                   >
                     <span />
                   </button>
@@ -109,7 +132,9 @@ export function RomaniaMap({ cities, activeCity, onCityChange }: RomaniaMapProps
                 <Tooltip.Portal>
                   <Tooltip.Content className="radix-tooltip" sideOffset={9}>
                     <strong>{city.name}</strong>
-                    <span>{city.count} oficiali · {city.referees} arbitri · {city.assistants} asistenți</span>
+                    {city.kind === "matches" ? (
+                      <><span>{city.count} {city.count === 1 ? "meci programat" : "meciuri programate"}</span>{city.labels?.map((label) => <span key={label}>{label}</span>)}</>
+                    ) : <span>{city.count} oficiali · {city.referees} arbitri · {city.assistants} asistenți</span>}
                     <Tooltip.Arrow className="radix-tooltip-arrow" />
                   </Tooltip.Content>
                 </Tooltip.Portal>
