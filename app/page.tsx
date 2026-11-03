@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
+  Check,
   ChevronDown,
   CircleCheck,
   Clock3,
@@ -15,6 +16,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { Select, ToggleGroup } from "radix-ui";
+import { RomaniaMap } from "@/components/romania-map";
 
 type Official = {
   name: string;
@@ -74,15 +77,6 @@ const fallbackSources: Source[] = [
   { name: "CCA — delegări județ", url: "https://frf-cca.ro/delegari_judet/", status: "live" },
 ];
 
-const cityPositions: Record<string, [number, number]> = {
-  "Alba Iulia": [272, 236], Arad: [111, 211], Bacău: [468, 191], București: [445, 353], Carei: [173, 86],
-  "Cluj-Napoca": [247, 152], Constanța: [579, 346], Craiova: [284, 354], Făgăraș: [344, 241], Galați: [532, 246],
-  Mangalia: [570, 382], Pitești: [373, 313], Ploiești: [420, 300], "Sfântu Gheorghe": [397, 229],
-  "Târgu Mureș": [323, 184], Vaslui: [506, 169], Iași: [517, 122], Timișoara: [123, 278],
-};
-
-const mapLabels = ["Satu Mare", "Cluj", "Brașov", "București", "Constanța", "Craiova", "Iași"];
-
 const initialData: DashboardData = {
   officials: fallbackOfficials,
   notices: fallbackNotices,
@@ -96,6 +90,7 @@ export default function Home() {
   const [activeCity, setActiveCity] = useState("București");
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("Toate rolurile");
+  const [mapMetric, setMapMetric] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {
@@ -120,6 +115,17 @@ export default function Home() {
   }, [data.officials]);
 
   const selectedOfficials = grouped[activeCity] || [];
+  const mapCities = Object.entries(grouped).map(([name, officials]) => {
+    const referees = officials.filter((official) => official.role === "Arbitru").length;
+    const assistants = officials.filter((official) => official.role === "Asistent").length;
+    return {
+      name,
+      county: officials[0]?.county || "",
+      count: mapMetric === "referees" ? referees : mapMetric === "assistants" ? assistants : officials.length,
+      referees,
+      assistants,
+    };
+  }).filter((city) => city.count > 0);
   const filtered = data.officials.filter((item) => {
     const text = `${item.name} ${item.city} ${item.county}`.toLocaleLowerCase("ro");
     return text.includes(query.toLocaleLowerCase("ro")) && (role === "Toate rolurile" || item.role === role);
@@ -167,42 +173,16 @@ export default function Home() {
 
         <div className="map-card">
           <div className="map-toolbar">
-            <div className="live-pill"><span /> DATE CCA & HAILAFOTBAL</div>
-            <div className="map-legend"><span className="legend-dot small" /> 1 oficial <span className="legend-dot large" /> 4+ oficiali</div>
+            <div className="live-pill"><span /> GEOMETRIE GISCO 2024 · DATE CCA</div>
+            <ToggleGroup.Root className="map-metric" type="single" value={mapMetric} onValueChange={(value) => value && setMapMetric(value)} aria-label="Filtrează marcajele hărții">
+              <ToggleGroup.Item value="all">Toți</ToggleGroup.Item>
+              <ToggleGroup.Item value="referees">Arbitri</ToggleGroup.Item>
+              <ToggleGroup.Item value="assistants">Asistenți</ToggleGroup.Item>
+            </ToggleGroup.Root>
           </div>
           <div className="map-layout">
-            <div className="romania-map" aria-label="Hartă interactivă a României">
-              <svg viewBox="0 0 680 455" role="img" aria-labelledby="map-title">
-                <title id="map-title">România — distribuția arbitrilor pe orașe</title>
-                <defs>
-                  <pattern id="map-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#b9c9c4" strokeWidth=".6" opacity=".42" /></pattern>
-                  <filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="14" floodColor="#122b25" floodOpacity=".12" /></filter>
-                </defs>
-                <path className="country-shadow" d="M84 165 L129 103 L201 73 L276 88 L347 55 L430 78 L493 113 L557 118 L602 166 L630 229 L594 281 L608 338 L550 384 L466 382 L405 415 L326 395 L260 403 L198 365 L123 348 L79 296 L96 233 Z" />
-                <path className="country" d="M84 165 L129 103 L201 73 L276 88 L347 55 L430 78 L493 113 L557 118 L602 166 L630 229 L594 281 L608 338 L550 384 L466 382 L405 415 L326 395 L260 403 L198 365 L123 348 L79 296 L96 233 Z" />
-                <path className="country-grid" d="M84 165 L129 103 L201 73 L276 88 L347 55 L430 78 L493 113 L557 118 L602 166 L630 229 L594 281 L608 338 L550 384 L466 382 L405 415 L326 395 L260 403 L198 365 L123 348 L79 296 L96 233 Z" />
-                <path className="carpathians" d="M182 153 C242 113 329 129 369 181 C412 236 424 260 488 280" />
-                {Object.entries(grouped).map(([city, officials]) => {
-                  const pos = cityPositions[city];
-                  if (!pos) return null;
-                  const count = officials.length;
-                  const isActive = activeCity === city;
-                  const r = Math.min(8 + count * 1.6, 16);
-                  return (
-                    <g key={city} className={`city-marker ${isActive ? "is-active" : ""}`} tabIndex={0} role="button" aria-label={`${city}, ${count} oficiali`} onMouseEnter={() => setActiveCity(city)} onFocus={() => setActiveCity(city)} onClick={() => setActiveCity(city)}>
-                      <circle className="marker-halo" cx={pos[0]} cy={pos[1]} r={r + 8} />
-                      <circle className="marker-ring" cx={pos[0]} cy={pos[1]} r={r} />
-                      <circle className="marker-core" cx={pos[0]} cy={pos[1]} r={Math.max(4, r - 5)} />
-                      {isActive && <text x={pos[0]} y={pos[1] - 23} textAnchor="middle">{city}</text>}
-                    </g>
-                  );
-                })}
-                {mapLabels.map((label, index) => {
-                  const city = label === "Satu Mare" ? "Carei" : label === "Cluj" ? "Cluj-Napoca" : label === "Brașov" ? "Făgăraș" : label;
-                  const p = cityPositions[city];
-                  return p && activeCity !== city ? <text className="map-place" key={label} x={p[0] + (index % 2 ? 12 : -12)} y={p[1] + (index % 2 ? 20 : -14)} textAnchor={index % 2 ? "start" : "end"}>{label}</text> : null;
-                })}
-              </svg>
+            <div className="romania-map">
+              <RomaniaMap cities={mapCities} activeCity={activeCity} onCityChange={setActiveCity} />
             </div>
 
             <aside className="city-panel" aria-live="polite">
@@ -233,7 +213,24 @@ export default function Home() {
         <div className="table-card">
           <div className="table-actions">
             <label className="search-field"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Caută după nume, oraș sau județ" /></label>
-            <label className="select-field"><select value={role} onChange={(e) => setRole(e.target.value)}><option>Toate rolurile</option><option>Arbitru</option><option>Asistent</option></select><ChevronDown size={15} /></label>
+            <Select.Root value={role} onValueChange={setRole}>
+              <Select.Trigger className="radix-select-trigger" aria-label="Filtrează după rol">
+                <Select.Value />
+                <Select.Icon><ChevronDown size={15} /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="radix-select-content" position="popper" sideOffset={6}>
+                  <Select.Viewport>
+                    {["Toate rolurile", "Arbitru", "Asistent"].map((item) => (
+                      <Select.Item className="radix-select-item" value={item} key={item}>
+                        <Select.ItemText>{item}</Select.ItemText>
+                        <Select.ItemIndicator><Check size={14} /></Select.ItemIndicator>
+                      </Select.Item>
+                    ))}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
           </div>
           <div className="table-scroll">
             <table>
