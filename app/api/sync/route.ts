@@ -1,5 +1,7 @@
 import { syncAllData } from "@/lib/data-sync";
 
+export const maxDuration = 120;
+
 export async function POST() {
   const startedAt = Date.now();
   const results = await syncAllData();

@@ -26,11 +26,7 @@
       "@/*": [
         "./*"
       ]
-    },
-    "types": [
-      "node",
-      "@cloudflare/workers-types"
-    ]
+    }
   },
   "include": [
     "next-env.d.ts",
@@ -49,5 +45,9 @@
     ".sites-runtime",
     "outputs",
     "work"
+    ,"worker"
+    ,"db/index.ts"
+    ,"vite.config.ts"
+    ,"scripts/vite"
   ]
 }
