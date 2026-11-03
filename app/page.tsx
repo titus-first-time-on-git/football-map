@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   ExternalLink,
+  FileDown,
   MapPin,
   Search,
   ShieldCheck,
@@ -267,6 +268,10 @@ export default function Home() {
     }
   };
 
+  const reportUrl = (row: ExplorerRow) => row.match
+    ? `/api/reports/match/${encodeURIComponent(row.match.id)}`
+    : row.official?.profileId ? `/api/reports/official/${row.official.profileId}` : null;
+
   const filterByActiveCity = () => {
     setQuery(activeCity);
     document.querySelector("#control")?.scrollIntoView({ behavior: "smooth" });
@@ -369,7 +374,7 @@ export default function Home() {
                     <td data-label="Competiție / lot"><span className="category-text">{row.category}</span></td>
                     <td data-label="Localitate"><b className="location-text">{row.city || "—"}</b><small>{row.county}</small></td>
                     <td data-label="Data / stare"><b className="state-text">{row.date && row.date.includes("T") ? dateFormatter.format(new Date(row.date)) : row.date || row.status}</b>{row.date && <small>{row.status}</small>}</td>
-                    <td className="action-cell"><button onClick={() => openRow(row)} aria-label={`Deschide ${row.title}`}><ExternalLink size={15} /></button></td>
+                    <td className="action-cell"><div className="record-actions"><button onClick={() => openRow(row)} aria-label={`Deschide ${row.title}`}><ExternalLink size={15} /></button>{reportUrl(row) && <a href={reportUrl(row)!} download aria-label={`Descarcă raportul PDF pentru ${row.title}`}><FileDown size={15} /></a>}</div></td>
                   </tr>
                 ))}
                 {!visibleRows.length && <tr><td className="empty-results" colSpan={6}>Nu există rezultate pentru filtrele selectate.</td></tr>}

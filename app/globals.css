@@ -140,8 +140,10 @@ nav a:hover { color: var(--blue); }
 .record-title:hover b { color: var(--blue); }
 .category-text { display: block; max-width: 220px; overflow: hidden; color: #48546a; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .location-text, .state-text { color: #48546a; font-size: 9px; }
-.action-cell { width: 48px; text-align: right; }
-.action-cell button { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue); cursor: pointer; }
+.action-cell { width: 78px; text-align: right; }
+.record-actions { display: flex; justify-content: flex-end; gap: 5px; }
+.record-actions button, .record-actions a { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue); cursor: pointer; }
+.record-actions a:hover { background: var(--soft-blue); }
 .empty-results { height: 180px; text-align: center; }
 .pagination { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; }
 .pagination > div { display: flex; align-items: center; gap: 10px; }
@@ -170,6 +172,8 @@ nav a:hover { color: var(--blue); }
 .full-delegate-list > button:not(:disabled):hover { border-color: #aac0f5; background: var(--soft-blue); }
 .full-delegate-list > button:disabled { cursor: default; }
 .dialog-source, .profile-source-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 15px; color: var(--blue); font-size: 9px; font-weight: 700; }
+.report-download { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: var(--blue); color: white; font-size: 9px; font-weight: 750; }
+.report-download:hover { background: var(--blue-dark); }
 
 .profile-header { display: flex; align-items: center; gap: 14px; padding-right: 38px; }
 .profile-monogram { width: 52px; height: 52px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; background: var(--soft-blue); color: var(--blue); font-size: 13px; font-weight: 800; }

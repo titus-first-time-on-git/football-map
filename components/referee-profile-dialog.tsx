@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, MapPin, ShieldCheck, X } from "lucide-react";
+import { Award, CalendarDays, FileDown, MapPin, ShieldCheck, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 
 type Official = {
@@ -153,6 +153,7 @@ export function RefereeProfileDialog({
                       </div>
                     </Tabs.Content>
                   </Tabs.Root>
+                  {official.profileId && <a className="report-download" href={`/api/reports/official/${official.profileId}`} download><FileDown size={15} /> Descarcă raportul PDF</a>}
                 </>
               ) : (
                 <div className="profile-empty"><Award size={20} /><p>Profilul istoric nu este disponibil momentan.</p></div>
