@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, ExternalLink, MapPin, ShieldCheck, UsersRound, X } from "lucide-react";
+import { CalendarDays, MapPin, ShieldCheck, UsersRound, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 
 type Delegate = { name: string; role: string; county: string };
@@ -85,7 +85,6 @@ export function MatchHistoryDialog({ match, officials, onOpenChange, onOfficialS
               <Tabs.Content value="teams">{loading ? <div className="profile-loading"><span /><span /><span /></div> : <MatchList items={detail?.teamHistory || []} empty="Nu există alte meciuri în cache pentru aceste echipe." />}</Tabs.Content>
               <Tabs.Content value="officials">{loading ? <div className="profile-loading"><span /><span /><span /></div> : <MatchList items={detail?.officialHistory || []} empty="Nu există alte delegări în cache pentru această brigadă." />}</Tabs.Content>
             </Tabs.Root>
-            <a className="dialog-source" href="https://hailafotbal.ro/arbitri/delegari" target="_blank" rel="noreferrer">Deschide sursa <ExternalLink size={13} /></a>
           </>}
         </Dialog.Content>
       </Dialog.Portal>

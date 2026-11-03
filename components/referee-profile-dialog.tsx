@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, ExternalLink, MapPin, ShieldCheck, X } from "lucide-react";
+import { Award, CalendarDays, MapPin, ShieldCheck, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 
 type Official = {
@@ -153,9 +153,6 @@ export function RefereeProfileDialog({
                       </div>
                     </Tabs.Content>
                   </Tabs.Root>
-                  <a className="profile-source-link" href={profile.url} target="_blank" rel="noreferrer">
-                    Profilul complet CCA <ExternalLink size={13} />
-                  </a>
                 </>
               ) : (
                 <div className="profile-empty"><Award size={20} /><p>Profilul istoric nu este disponibil momentan.</p></div>

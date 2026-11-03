@@ -37,6 +37,19 @@ export async function writeSync(scope: string, status: string, message = "") {
     ON CONFLICT(scope) DO UPDATE SET synced_at=excluded.synced_at, status=excluded.status, message=excluded.message`,
     args: [scope, new Date().toISOString(), status, message] });
 }
+export async function claimSyncJob(maxAge = 10 * 60_000) {
+  const db = database();
+  if (!db) return false;
+  const now = new Date();
+  const staleBefore = new Date(now.getTime() - maxAge).toISOString();
+  const result = await db.execute({
+    sql: `INSERT INTO sync_state (scope, synced_at, status, message) VALUES ('job', ?, 'running', '')
+      ON CONFLICT(scope) DO UPDATE SET synced_at=excluded.synced_at, status='running', message=''
+      WHERE sync_state.synced_at < ? OR sync_state.status = 'error'`,
+    args: [now.toISOString(), staleBefore],
+  });
+  return result.rowsAffected > 0;
+}
 export async function readOfficials() {
   const db = database();
   if (!db) return [];

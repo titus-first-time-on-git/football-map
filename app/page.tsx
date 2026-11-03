@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Check,
   ChevronDown,
   ExternalLink,
   MapPin,
-  RefreshCw,
   Search,
   ShieldCheck,
   UserRound,
@@ -28,15 +27,9 @@ type Official = {
 };
 
 type Notice = { title: string; date: string; url: string; attachment?: string };
-type Source = { name: string; url: string; status: "live" | "redirect" | "limited" };
 type DashboardData = {
   officials: Official[];
   notices: Notice[];
-  sources: Source[];
-  updatedAt: string | null;
-  needsSync: boolean;
-  storage: "sqlite" | "fallback";
-  mode: "live" | "fallback" | "mixed";
 };
 
 type ManagerMatch = {
@@ -60,10 +53,6 @@ type ManagerData = {
   recent: ManagerMatch[];
   workload: Array<{ name: string; county: string; central: number; assistant: number; var: number; total: number }>;
   competitions: string[];
-  updatedAt: string | null;
-  needsSync: boolean;
-  storage: "sqlite" | "fallback";
-  mode: "live" | "fallback";
 };
 
 type ExplorerRow = {
@@ -77,18 +66,16 @@ type ExplorerRow = {
   date: string;
   status: string;
   search: string;
-  sourceUrl: string;
   match?: ManagerMatch;
   official?: Official;
-  notice?: Notice;
 };
 
 const emptyDashboard: DashboardData = {
-  officials: [], notices: [], sources: [], updatedAt: null, needsSync: true, storage: "fallback", mode: "mixed",
+  officials: [], notices: [],
 };
 
 const emptyManager: ManagerData = {
-  season: "2026–2027", upcoming: [], recent: [], workload: [], competitions: [], updatedAt: null, needsSync: true, storage: "fallback", mode: "fallback",
+  season: "2026–2027", upcoming: [], recent: [], workload: [], competitions: [],
 };
 
 const PAGE_SIZE = 25;
@@ -125,7 +112,6 @@ function SearchableFilter({ value, onValueChange, label, options }: {
 export default function Home() {
   const [data, setData] = useState(emptyDashboard);
   const [manager, setManager] = useState(emptyManager);
-  const [refreshing, setRefreshing] = useState(true);
   const [activeCity, setActiveCity] = useState("București");
   const [mapMode, setMapMode] = useState("matches");
   const [query, setQuery] = useState("");
@@ -136,46 +122,27 @@ export default function Home() {
   const [selectedOfficial, setSelectedOfficial] = useState<Official | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<ManagerMatch | null>(null);
-  const syncInFlight = useRef(false);
-
-  const loadCache = async () => {
-    try {
-      const [footballResponse, managerResponse] = await Promise.all([
-        fetch("/api/football", { cache: "no-store" }),
-        fetch("/api/manager", { cache: "no-store" }),
-      ]);
-      const nextData = footballResponse.ok ? await footballResponse.json() as DashboardData : null;
-      const nextManager = managerResponse.ok ? await managerResponse.json() as ManagerData : null;
-      if (nextData) setData(nextData);
-      if (nextManager) setManager(nextManager);
-      return { needsSync: Boolean(nextData?.needsSync || nextManager?.needsSync) };
-    } catch {
-      return { needsSync: false };
-    }
-  };
-
-  const refresh = async () => {
-    if (syncInFlight.current) return;
-    syncInFlight.current = true;
-    setRefreshing(true);
-    try {
-      await fetch("/api/sync", { method: "POST", cache: "no-store" });
-      await loadCache();
-    } finally {
-      syncInFlight.current = false;
-      setRefreshing(false);
-    }
-  };
 
   useEffect(() => {
     let active = true;
-    loadCache().then((result) => {
-      if (!active) return;
-      setRefreshing(false);
-      if (result.needsSync) refresh();
-    });
-    const timer = window.setInterval(refresh, 10 * 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    let retryTimer: number | undefined;
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch("/api/dashboard", { cache: "no-store" });
+        if (!response.ok || !active) return;
+        const payload = await response.json() as { dashboard: DashboardData; manager: ManagerData; refreshPending: boolean };
+        setData(payload.dashboard);
+        setManager(payload.manager);
+        if (payload.refreshPending) retryTimer = window.setTimeout(loadDashboard, 60_000);
+      } catch { /* Keep the last usable view when the connection is interrupted. */ }
+    };
+    loadDashboard();
+    const timer = window.setInterval(loadDashboard, 10 * 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -240,7 +207,6 @@ export default function Home() {
         date: match.date,
         status: match.score ? `${match.score} · ${match.status}` : match.status,
         search: `${match.home} ${match.away} ${match.competition} ${match.round} ${match.city} ${match.county} ${match.stadium} ${match.delegates.map((delegate) => `${delegate.name} ${delegate.role} ${delegate.county}`).join(" ")}`,
-        sourceUrl: "https://hailafotbal.ro/arbitri/delegari",
         match,
       };
     });
@@ -256,7 +222,6 @@ export default function Home() {
       date: "",
       status: "Activ în lot",
       search: `${official.name} ${official.role} ${official.league} ${official.city} ${official.county}`,
-      sourceUrl: official.profileId ? `https://www.frf-cca.ro/arbitru/${official.profileId}` : "https://www.frf-cca.ro/arbitri/",
       official,
     }));
 
@@ -291,7 +256,6 @@ export default function Home() {
   const officialCount = mapMode === "referees"
     ? data.officials.filter((official) => official.role === "Arbitru").length
     : data.officials.filter((official) => official.role === "Asistent").length;
-  const lastSync = [data.updatedAt, manager.updatedAt].filter(Boolean).sort().at(-1);
   const mapTypeLabel = mapMode === "matches" ? "Meciuri" : mapMode === "referees" ? "Arbitri" : "Asistenți";
 
   const openRow = (row: ExplorerRow) => {
@@ -300,8 +264,6 @@ export default function Home() {
       setProfileOpen(true);
     } else if (row.match) {
       setSelectedMatch(row.match);
-    } else if (row.notice) {
-      window.open(row.sourceUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -321,16 +283,11 @@ export default function Home() {
           <a href="#harta">Hartă</a>
           <a href="#control">Control</a>
         </nav>
-        <button className="refresh-button" onClick={refresh} disabled={refreshing}>
-          <RefreshCw size={15} className={refreshing ? "spin" : ""} />
-          <span>{refreshing ? "Sincronizare" : "Actualizează"}</span>
-        </button>
       </header>
 
       <section className="map-section" id="harta">
         <div className="section-title">
           <div><span>01</span><h1>Harta arbitrajului</h1></div>
-          <p><i className={data.storage === "sqlite" || manager.storage === "sqlite" ? "online" : ""} /> {refreshing ? "Sincronizare în fundal" : lastSync ? `SQLite · ${new Intl.DateTimeFormat("ro-RO", { hour: "2-digit", minute: "2-digit" }).format(new Date(lastSync))}` : "Cache local pregătit"}</p>
         </div>
 
         <div className="map-card">
@@ -382,7 +339,7 @@ export default function Home() {
       <section className="control-section" id="control">
         <div className="section-title">
           <div><span>02</span><h2>Centrul de control</h2></div>
-          <p>{filteredRows.length} rezultate din cache</p>
+          <p>{filteredRows.length} rezultate</p>
         </div>
 
         <div className="explorer-card">

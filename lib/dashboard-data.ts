@@ -1,5 +1,5 @@
-import { fallbackMatches } from "@/lib/data-sync";
-import { isFresh, readMatches, readSync, type StoredMatch } from "@/lib/data-store";
+import { fallbackMatches, fallbackOfficials } from "@/lib/data-sync";
+import { isFresh, readMatches, readNotices, readOfficials, readSync, type StoredMatch } from "@/lib/data-store";
 
 function workload(matches: StoredMatch[]) {
   const rows = new Map<string, { name: string; county: string; central: number; assistant: number; var: number; total: number }>();
@@ -16,27 +16,31 @@ function workload(matches: StoredMatch[]) {
   return [...rows.values()].sort((a, b) => b.total - a.total);
 }
 
-export async function GET() {
-  const [stored, state] = await Promise.all([readMatches(), readSync("matches")]);
-  const matches = stored.length ? stored : fallbackMatches;
+export async function getDashboardData() {
+  const [storedOfficials, notices, directoryState, storedMatches, matchState] = await Promise.all([
+    readOfficials(), readNotices(), readSync("directory"), readMatches(), readSync("matches"),
+  ]);
+  const officials = storedOfficials.length ? storedOfficials : fallbackOfficials;
+  const matches = storedMatches.length ? storedMatches : fallbackMatches;
   const now = Date.now();
   const upcoming = matches.filter((match) => new Date(match.date).getTime() >= now - 12 * 60 * 60 * 1000)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const recent = matches.filter((match) => new Date(match.date).getTime() < now - 12 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   let syncMeta: { season?: string; competitions?: string[] } = {};
-  try { syncMeta = JSON.parse(state?.message || "{}"); } catch { /* Keep derived metadata. */ }
+  try { syncMeta = JSON.parse(matchState?.message || "{}"); } catch { /* Use the values derived from matches. */ }
   const competitions = [...new Set([...(syncMeta.competitions || []), ...matches.map((match) => match.competition)])]
     .filter(Boolean).sort((a, b) => a.localeCompare(b, "ro"));
-  return Response.json({
-    season: syncMeta.season || "2026–2027",
-    upcoming,
-    recent,
-    workload: workload(recent),
-    competitions,
-    updatedAt: state?.syncedAt || null,
-    needsSync: !isFresh(state?.syncedAt),
-    mode: stored.length ? "live" : "fallback",
-    storage: stored.length ? "sqlite" : "fallback",
-  }, { headers: { "cache-control": "no-store" } });
+
+  return {
+    dashboard: { officials, notices },
+    manager: {
+      season: syncMeta.season || "2026–2027",
+      upcoming,
+      recent,
+      workload: workload(recent),
+      competitions,
+    },
+    refreshPending: !isFresh(directoryState?.syncedAt) || !isFresh(matchState?.syncedAt),
+  };
 }
